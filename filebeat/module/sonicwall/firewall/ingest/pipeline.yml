@@ -1,0 +1,99 @@
+description: Pipeline for parsing sonicwall firewall logs
+processors:
+- set:
+    field: event.ingested
+    value: '{{_ingest.timestamp}}'
+- grok:
+    field: message
+    patterns:
+    - '%{SYSLOG5424PRI}\s+%{GREEDYDATA:syslog5424_sd}$'
+- kv:
+    field: syslog5424_sd
+    field_split: " (?=[a-zA-Z\\_\\-]+=)"
+    value_split: "="
+    prefix: "sonicwall.tmp."
+    ignore_missing: true
+    ignore_failure: false
+    trim_value: "\""
+- rename:
+    field: sonicwall.tmp
+    target_field: sonicwall.firewall
+    ignore_missing: true
+- script:
+    lang: painless
+    source: |
+      def fw = ctx?.sonicwall?.firewall;
+      if (fw != null) {
+        fw.entrySet().removeIf(entry -> entry.getValue() == "N/A");
+      }
+- set:
+    field: observer.vendor
+    value: Sonicwall
+- set:
+    field: observer.product
+    value: SonicOS
+- set:
+    field: observer.type
+    value: firewall
+- set:
+    field: event.module
+    value: sonicwall
+- set:
+    field: event.dataset
+    value: sonicwall.firewall
+- set:
+    field: _temp.time
+    value: "{{sonicwall.firewall.time}}"
+- date:
+    field: _temp.time
+    target_field: "@timestamp"
+    formats:
+    - yyyy-MM-dd HH:mm:ss
+    - yyyy-MM-dd HH:mm:ss Z
+    - yyyy-MM-dd HH:mm:ss z
+    - ISO8601
+- rename:
+    field: sonicwall.firewall.sn
+    target_field: observer.serial_number
+    ignore_missing: true
+#dst=65.57.179.42:26:X1
+- grok:
+    field: sonicwall.firewall.dst
+    patterns:
+      - '%{IP:dstIP}:%{POSINT:dstPort}(:%{GREEDYDATA:dstintf})?'
+- rename:
+    field: dstIP
+    target_field:  destination.ip
+    ignore_missing: true
+- rename:
+    field: dstPort
+    target_field: destination.port
+    ignore_missing: true
+- rename:
+    field: dstintf
+    target_field: observer.egress.interface.name
+    if: "ctx.dstintf != null"
+- grok:
+    field: sonicwall.firewall.src
+    patterns:
+      - '%{IP:srcIP}:%{POSINT:srcPort}(:%{GREEDYDATA:srcintf})?'
+- rename:
+    field: srcIP
+    target_field:  source.ip
+    ignore_missing: true
+- rename:
+    field: srcPort
+    target_field: source.port
+    ignore_missing: true
+- rename:
+    field: srcintf
+    target_field: observer.ingress.interface.name
+    if: "ctx.srcintf != null"
+- remove:
+    field:
+      - _temp.time
+      - _temp
+      - syslog5424_sd
+      - syslog5424_pri
+      - sonicwall.firewall.dst
+      - sonicwall.firewall.src

@@ -1,0 +1,3 @@
+- module: sonicwall
+  firewall:
+    enabled: true

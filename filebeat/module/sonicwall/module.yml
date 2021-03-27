@@ -1,0 +1,3 @@
+dashboards:
+- id: Filebeat-Sonicwall-firewall-Dashboard
+  file: Filebeat-Sonicwall-firewall.json
