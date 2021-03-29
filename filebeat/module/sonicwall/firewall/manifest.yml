@@ -14,8 +14,5 @@ var:
 
 ingest_pipeline:
   - ingest/pipeline.yml
-  # - ingest/event.yml
-  # - ingest/utm.yml
-  # - ingest/traffic.yml
 
 input: config/firewall.yml

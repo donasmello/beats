@@ -68,18 +68,6 @@ processors:
     field: sonicwall.firewall.dstMac
     target_field: destination.mac
     ignore_missing: true
-- convert:
-    field: sonicwall.firewall.sent
-    target_field: source.bytes
-    type: long
-    ignore_failure: true
-    ignore_missing: true
-- convert:
-    field: sonicwall.firewall.rcvd
-    target_field: destination.bytes
-    type: long
-    ignore_failure: true
-    ignore_missing: true
 - rename:
     field: sonicwall.firewall.dstname
     target_field: url.domain
@@ -130,6 +118,22 @@ processors:
     field: srcintf
     target_field: observer.ingress.interface.name
     if: "ctx.srcintf != null"
+- grok:
+    field: sonicwall.firewall.proto
+    patterns:
+      - '%{DATA:network.transport}\/%{GREEDYDATA:network.protocol}'
+- convert:
+    field: sonicwall.firewall.sent
+    target_field: source.bytes
+    type: long
+    ignore_failure: true
+    ignore_missing: true
+- convert:
+    field: sonicwall.firewall.rcvd
+    target_field: destination.bytes
+    type: long
+    ignore_failure: true
+    ignore_missing: true
 - script:
     lang: painless
     source: "ctx.network.bytes = ctx.source.bytes + ctx.destination.bytes"
@@ -141,7 +145,3 @@ processors:
       - _temp
       - syslog5424_sd
       - syslog5424_pri
-      - sonicwall.firewall.dst
-      - sonicwall.firewall.src
-      - sonicwall.firewall.rcvd
-      - sonicwall.firewall.sent
