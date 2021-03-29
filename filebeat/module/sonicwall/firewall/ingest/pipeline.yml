@@ -122,6 +122,7 @@ processors:
     field: sonicwall.firewall.proto
     patterns:
       - '%{DATA:network.transport}\/%{GREEDYDATA:network.protocol}'
+    ignore_missing: true
 - convert:
     field: sonicwall.firewall.sent
     target_field: source.bytes
@@ -145,3 +146,7 @@ processors:
       - _temp
       - syslog5424_sd
       - syslog5424_pri
+on_failure:
+- set:
+    field: error.message
+    value: '{{ _ingest.on_failure_message }}'
